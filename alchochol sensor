@@ -1,0 +1,188 @@
+#include <ESP8266WiFi.h>
+
+const char* ssid = "Anagha";
+const char* password = "87654321";
+
+
+const int BuzzerPin = D2;       // Buzzer output pin
+const int threshold = 500;   // alchohal level
+
+const int analogPin = A0;
+
+int WiFiStrength = 0;
+
+WiFiServer server(80);
+
+void setup() {
+  Serial.begin(115200);
+  delay(10);
+
+  pinMode(BuzzerPin, OUTPUT);
+
+
+//*******************************
+  // Connect to Wi-Fi network with SSID and password
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  // Print local IP address and start web server
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+
+//******************************
+
+  // Connect to WiFi network
+  //Serial.println();
+  //Serial.println();
+  //Serial.print("Connecting to ");
+  //Serial.println(ssid);
+
+  //WiFi.begin(ssid, password);
+
+  // Set the ip address of the webserver
+  // WiFi.config(WebServerIP, Gatway, Subnet)
+  // or comment out the line below and DHCP will be used to obtain an IP address
+  // which will be displayed via the serial console
+
+  //WiFi.config(IPAddress(192, 168, 1, 221), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
+
+  // connect to WiFi router
+  //while (WiFi.status() != WL_CONNECTED) {
+    //delay(500);
+    //Serial.print(".");
+  //}
+
+  //Serial.println("");
+  //Serial.println("WiFi connected");
+
+  // Start the server
+  //server.begin();
+  //Serial.println("Server started");
+
+  // Print the IP address
+  //Serial.print("Use this URL to connect: ");
+  //Serial.print("http://");
+  //Serial.print(WiFi.localIP());
+  //Serial.println("/");
+
+}
+
+double analogValue = 0.0;
+
+
+void loop() {
+
+  WiFiStrength = WiFi.RSSI();
+  int analogValue = analogRead(analogPin);
+   Serial.println(analogValue);//serial print the ALCHOHAL sensor value
+  
+
+  // convert the analog signal to voltage
+  // the ESP2866 A0 reads between 0 and ~3 volts, producing a corresponding value
+  // between 0 and 1024. The equation below will convert the value to a voltage value.
+
+
+
+ 
+
+   if (analogValue > threshold) {
+    digitalWrite(BuzzerPin, HIGH);
+    Serial.print("High alchohal");
+    delay(500);
+  } 
+ 
+  else {
+    digitalWrite(BuzzerPin, LOW);
+    Serial.print("limited alchohol");
+  delay(100);       
+}
+
+  // Serial data
+  Serial.print("Analog raw: ");
+  Serial.println(analogValue);
+  //Serial.print("Analog V: ");
+  
+
+  Serial.print("millis(): ");
+  Serial.println(millis());
+  Serial.print("WiFi Strength: ");
+  Serial.print(WiFiStrength); Serial.println("dBm");
+  Serial.println(" ");
+  delay(1000); // slows amount of data sent via serial
+
+  // check to for any web server requests. ie - browser requesting a page from the webserver
+  WiFiClient client = server.available();
+  if (!client) {
+    return;
+  }
+
+  // Wait until the client sends some data
+  Serial.println("new client");
+
+  // Read the first line of the request
+  String request = client.readStringUntil('\r');
+  Serial.println(request);
+  client.flush();
+
+  // Return the response
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println(""); //  do not forget this one
+  client.println("<!DOCTYPE HTML>");
+
+  client.println("<html>");
+  client.println(" <head>");
+  client.println("<meta http-equiv=\"refresh\" content=\"60\">");
+  client.println(" <script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
+  client.println("  <script type=\"text/javascript\">");
+  client.println("    google.charts.load('current', {'packages':['gauge']});");
+  client.println("    google.charts.setOnLoadCallback(drawChart);");
+  client.println("   function drawChart() {");
+
+  client.println("      var data = google.visualization.arrayToDataTable([ ");
+ 
+  client.println("  }");
+ 
+
+  client.println(" </script>");
+
+  client.println("  </head>");
+  client.println("  <body>");
+ client.println("<center>");
+  client.print("<h1 style=\"size:20px;\">ALCHOHAL DETECTION</h1>");
+  
+
+
+  
+
+  // show some data on the webpage and the guage
+ 
+ 
+ client.println("<table><tr><td>");
+  client.print("<p style=\"size:18px;\">WiFi Signal Strength:</p>");
+  client.println(WiFiStrength);
+  client.println("dBm<br>");
+  client.print("<p style=\"size=18px;\">Analog Raw:</p>");
+  client.println(analogValue);
+  
+client.println("</td></tr></table>");
+client.println("<p> analog raw<200===> you are sober <br> analog raw 200 to 280 ===> alchohal detected <br> Analog raw 280 to 350 ===> More than one drink going on here....<br> Analog 350 to 450 ===>  Serious Booze here!<br> Analog raw  >450 ===>  you are drunk</p>");
+ //client.println("<img src=\"C:\Users\VASAVI B V\Pictures\Saved Pictures\alo" width=\"10px\" height=\"10px\">");
+
+ client.println("</center>");
+//client.println("<script>setInterval(function(){window.location.reload();},10000);</script>");
+  client.println("<body>");
+  client.println("</html>");
+  delay(1);
+  Serial.println("Client disonnected");
+  Serial.println("");
+
+
+}
